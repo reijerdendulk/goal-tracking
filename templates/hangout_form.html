@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Add Hangout - Goal Tracking{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h2>Add Hangout</h2>
+
+    {% if error %}
+    <div class="error-message">
+        <strong>Error:</strong> {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="post" action="/ui/hangouts">
+        <div class="form-group">
+            <label for="title">Title *</label>
+            <input type="text" id="title" name="title" required>
+        </div>
+
+        <div class="form-group">
+            <label for="location_name">Location Name</label>
+            <input type="text" id="location_name" name="location_name">
+            <small>Example: Blue Bottle Coffee</small>
+        </div>
+
+        <div class="form-group">
+            <label for="location_type">Location Type</label>
+            <input type="text" id="location_type" name="location_type">
+            <small>Example: cafe, restaurant, park</small>
+        </div>
+
+        <div class="form-group">
+            <label for="mood">Mood (1-5)</label>
+            <input type="number" id="mood" name="mood" min="1" max="5">
+            <small>1 = worst, 5 = best</small>
+        </div>
+
+        <div class="form-group">
+            <label for="participants">Participants</label>
+            <input type="text" id="participants" name="participants">
+            <small>Comma-separated names (e.g., "Alice, Bob, Charlie")</small>
+        </div>
+
+        <div class="form-group">
+            <label for="notes">Notes</label>
+            <textarea id="notes" name="notes" rows="4"></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Hangout</button>
+            <a href="/ui" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+
+    <div class="info-box">
+        <h4>Important Notes:</h4>
+        <ul>
+            <li>Timestamp will be set to current time (UTC)</li>
+            <li>Participants will be created if they don't exist</li>
+            <li>Existing participants will be matched by name</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

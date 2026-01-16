@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Goal Tracking{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <h1>Goal Tracking</h1>
+        <nav>
+            <a href="/ui">Home</a>
+            <a href="/ui/runs">Add Run</a>
+            <a href="/ui/hangouts">Add Hangout</a>
+            <a href="/ui/work">Add Work Session</a>
+            <a href="/docs">API Docs</a>
+        </nav>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>Goal Tracking &copy; 2026</p>
+    </footer>
+</body>
+</html>
