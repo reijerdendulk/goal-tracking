@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { listRuns, RunListItem } from '@/lib/api';
+import { PATHS } from '@/app/config/routes';
 
 /**
  * Convert meters to miles.
@@ -151,7 +152,7 @@ export default function Dashboard() {
         <div className="text-center">
           <p className="text-red-600 text-lg">{error}</p>
           <Link
-            href="/"
+            href={PATHS.home}
             className="mt-4 inline-block text-blue-600 hover:underline"
           >
             Back to Home
@@ -171,7 +172,7 @@ export default function Dashboard() {
               <p className="text-blue-100 text-sm mt-1">{currentMonth}</p>
             </div>
             <Link
-              href="/"
+              href={PATHS.home}
               className="px-4 py-2 bg-blue-500 hover:bg-blue-400 rounded-lg transition-colors"
             >
               Back to Home
@@ -250,7 +251,7 @@ export default function Dashboard() {
                       color: '#111827',
                     }}
                     labelStyle={{ color: '#111827', fontWeight: 'bold' }}
-                    formatter={(value: number) => [`${value} miles`, 'Distance']}
+                    formatter={(value) => [`${value} miles`, 'Distance']}
                     labelFormatter={(label, payload) => {
                       if (payload && payload[0]) {
                         return `${payload[0].payload.fullDate} - ${payload[0].payload.title}`;
@@ -272,7 +273,7 @@ export default function Dashboard() {
           ) : (
             <div className="h-80 flex items-center justify-center text-gray-500">
               No runs recorded this month.{' '}
-              <Link href="/runs/new" className="text-blue-600 hover:underline ml-1">
+              <Link href={PATHS.newRun} className="text-blue-600 hover:underline ml-1">
                 Add your first run
               </Link>
             </div>

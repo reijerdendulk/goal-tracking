@@ -2,14 +2,35 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { getRecentActivities, type RecentActivity, checkHealth } from '@/lib/api';
 import { metersToMiles, secPerKmToPaceStr } from '@/lib/conversions';
+import { PATHS } from '@/app/config/routes';
+import { GOALS } from '@/app/config/goals';
+import { GoalTile } from '@/app/components/GoalTile';
+import { loadEntries, SingleValueEntry } from '@/app/config/storage';
 
 export default function Home() {
   const [activities, setActivities] = useState<RecentActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dbStatus, setDbStatus] = useState<'checking' | 'ok' | 'error'>('checking');
+  const [localHangouts, setLocalHangouts] = useState<SingleValueEntry[]>([]);
+  const [localWorkSessions, setLocalWorkSessions] = useState<SingleValueEntry[]>([]);
+  const pathname = usePathname();
+
+  // Load hangouts and work sessions from localStorage
+  useEffect(() => {
+    const hangoutsData = loadEntries<SingleValueEntry>('hangouts');
+    const workData = loadEntries<SingleValueEntry>('work-sessions');
+    // Sort by date descending, take latest 10
+    setLocalHangouts([...hangoutsData].sort((a, b) =>
+      new Date(b.dateISO).getTime() - new Date(a.dateISO).getTime()
+    ).slice(0, 10));
+    setLocalWorkSessions([...workData].sort((a, b) =>
+      new Date(b.dateISO).getTime() - new Date(a.dateISO).getTime()
+    ).slice(0, 10));
+  }, [pathname]);
 
   useEffect(() => {
     async function fetchData() {
@@ -18,7 +39,7 @@ export default function Home() {
         const health = await checkHealth();
         setDbStatus(health.ok ? 'ok' : 'error');
 
-        // Fetch recent activities
+        // Fetch recent activities (for runs from API)
         const data = await getRecentActivities(10);
         setActivities(data);
       } catch (err) {
@@ -33,8 +54,6 @@ export default function Home() {
   }, []);
 
   const runs = activities.filter((a) => a.type === 'run');
-  const hangouts = activities.filter((a) => a.type === 'hangout');
-  const workSessions = activities.filter((a) => a.type === 'work');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -75,35 +94,20 @@ export default function Home() {
         {/* Dashboard Link */}
         <section className="mb-6">
           <Link
-            href="/dashboard"
+            href={PATHS.dashboard}
             className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow"
           >
-            <span className="mr-2">📊</span> View Run Dashboard
+            View Run Dashboard
           </Link>
         </section>
 
-        {/* Quick Actions */}
-        <section className="bg-white rounded-lg shadow p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link
-              href="/runs/new"
-              className="flex items-center justify-center px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              🏃 Add Run
-            </Link>
-            <Link
-              href="/hangouts/new"
-              className="flex items-center justify-center px-6 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-            >
-              👥 Add Hangout
-            </Link>
-            <Link
-              href="/work/new"
-              className="flex items-center justify-center px-6 py-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
-            >
-              💼 Add Work Session
-            </Link>
+        {/* Goal Hub */}
+        <section className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Goals</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {GOALS.map((goal) => (
+              <GoalTile key={goal.id} goal={goal} />
+            ))}
           </div>
         </section>
 
@@ -159,39 +163,38 @@ export default function Home() {
                 </div>
               ) : (
                 <p className="text-gray-500 text-center py-8">
-                  No runs yet. <Link href="/runs/new" className="text-blue-600 hover:underline">Add your first run!</Link>
+                  No runs yet. <Link href={PATHS.newRun} className="text-blue-600 hover:underline">Add your first run!</Link>
                 </p>
               )}
             </section>
 
             {/* Recent Hangouts */}
             <section className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Hangouts</h3>
-              {hangouts.length > 0 ? (
+              <div className="flex items-baseline justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Recent Hangouts</h3>
+                <span className="text-xs text-gray-400">Showing local entries</span>
+              </div>
+              {localHangouts.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
                         <th className="text-left py-3 px-4 font-medium text-gray-600">Date</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Title</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Participants</th>
-                        <th className="text-center py-3 px-4 font-medium text-gray-600">Mood</th>
+                        <th className="text-right py-3 px-4 font-medium text-gray-600">Count</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-600">Notes</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {hangouts.map((hangout) => (
-                        <tr key={hangout.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      {localHangouts.map((hangout, idx) => (
+                        <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
                           <td className="py-3 px-4 text-gray-900">
-                            {new Date(hangout.start_at).toLocaleDateString()}
+                            {new Date(hangout.dateISO).toLocaleDateString()}
                           </td>
-                          <td className="py-3 px-4 text-gray-900 font-medium">{hangout.title}</td>
+                          <td className="py-3 px-4 text-right text-gray-900">
+                            {hangout.value} hangout{hangout.value !== 1 ? 's' : ''}
+                          </td>
                           <td className="py-3 px-4 text-gray-900">
-                            {hangout.participants && hangout.participants.length > 0
-                              ? hangout.participants.map((p) => p.person.name).join(', ')
-                              : '-'}
-                          </td>
-                          <td className="py-3 px-4 text-center text-gray-900">
-                            {hangout.hangout_detail?.mood ? '⭐'.repeat(hangout.hangout_detail.mood) : '-'}
+                            {hangout.notes || '-'}
                           </td>
                         </tr>
                       ))}
@@ -200,51 +203,38 @@ export default function Home() {
                 </div>
               ) : (
                 <p className="text-gray-500 text-center py-8">
-                  No hangouts yet. <Link href="/hangouts/new" className="text-green-600 hover:underline">Add your first hangout!</Link>
+                  No hangouts yet. <Link href={PATHS.newHangout} className="text-green-600 hover:underline">Add your first hangout!</Link>
                 </p>
               )}
             </section>
 
             {/* Recent Work Sessions */}
             <section className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Work Sessions</h3>
-              {workSessions.length > 0 ? (
+              <div className="flex items-baseline justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Recent Work Sessions</h3>
+                <span className="text-xs text-gray-400">Showing local entries</span>
+              </div>
+              {localWorkSessions.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
                         <th className="text-left py-3 px-4 font-medium text-gray-600">Date</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Title</th>
-                        <th className="text-left py-3 px-4 font-medium text-gray-600">Project</th>
-                        <th className="text-center py-3 px-4 font-medium text-gray-600">Duration</th>
-                        <th className="text-center py-3 px-4 font-medium text-gray-600">Status</th>
+                        <th className="text-right py-3 px-4 font-medium text-gray-600">Duration</th>
+                        <th className="text-left py-3 px-4 font-medium text-gray-600">Notes</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {workSessions.map((work) => (
-                        <tr key={work.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      {localWorkSessions.map((work, idx) => (
+                        <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
                           <td className="py-3 px-4 text-gray-900">
-                            {new Date(work.start_at).toLocaleDateString()}
+                            {new Date(work.dateISO).toLocaleDateString()}
                           </td>
-                          <td className="py-3 px-4 text-gray-900 font-medium">{work.title}</td>
-                          <td className="py-3 px-4 text-gray-900">{work.work_detail?.project || '-'}</td>
-                          <td className="py-3 px-4 text-center text-gray-900">
-                            {work.duration_min ? `${work.duration_min} min` : '-'}
+                          <td className="py-3 px-4 text-right text-gray-900">
+                            {work.value} min
                           </td>
-                          <td className="py-3 px-4 text-center">
-                            <span
-                              className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-                                work.work_detail?.status === 'done'
-                                  ? 'bg-green-100 text-green-800'
-                                  : work.work_detail?.status === 'in_progress'
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : work.work_detail?.status === 'blocked'
-                                  ? 'bg-red-100 text-red-800'
-                                  : 'bg-blue-100 text-blue-800'
-                              }`}
-                            >
-                              {work.work_detail?.status || '-'}
-                            </span>
+                          <td className="py-3 px-4 text-gray-900">
+                            {work.notes || '-'}
                           </td>
                         </tr>
                       ))}
@@ -253,7 +243,7 @@ export default function Home() {
                 </div>
               ) : (
                 <p className="text-gray-500 text-center py-8">
-                  No work sessions yet. <Link href="/work/new" className="text-purple-600 hover:underline">Add your first session!</Link>
+                  No work sessions yet. <Link href={PATHS.newWorkSession} className="text-purple-600 hover:underline">Add your first session!</Link>
                 </p>
               )}
             </section>
